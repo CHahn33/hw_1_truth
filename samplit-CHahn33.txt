@@ -3,6 +3,13 @@ import sys
 
 file = open(sys.argv[1])
 
+<<<<<<< HEAD
+for text in file:
+	if random.random() < 0.01:
+		print(text)
+
+=======
 for row in file:
 	if random.random() < 0.01:
 		print(row)
+>>>>>>> hw_1b
