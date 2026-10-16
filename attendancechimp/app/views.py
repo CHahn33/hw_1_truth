@@ -38,13 +38,18 @@ def time_view(request):
     formatted_time = current_time.strftime("%H:%M")
     return HttpResponse(formatted_time, content_type="text/plain")
 
+import json
+from django.http import HttpResponse
+
 def sum_view(request):
     n1 = float(request.GET.get("n1"))
     n2 = float(request.GET.get("n2"))
 
     total = n1 + n2
 
-    return JsonResponse({"sum": total})
+    result = json.dumps({"sum": total})
+
+    return HttpResponse(f"<p>{result}</p>")
 
 
 
