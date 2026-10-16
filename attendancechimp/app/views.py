@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from datetime import datetime
-import zoneinfo
+from zoneinfo import ZoneInfo
 import json
 import io
 
@@ -20,7 +20,7 @@ import io
 #                      Lecture, QRCodeUpload, is_instructor, is_student,
 #                      getUploadsForCourse)
 
-CDT = zoneinfo.ZoneInfo("America/Chicago")
+CDT = ZoneInfo("America/Chicago")
 
 
 # ---------------------------------------------------------------------------
@@ -32,6 +32,19 @@ def index(request):
 
     context = {}
     return render(request, 'app/index.html', context)
+
+def time_view(request):
+    current_time = datetime.now(ZoneInfo("America/Chicago"))
+    formatted_time = current_time.strftime("%H:%M")
+    return HttpResponse(formatted_time, content_type="text/plain")
+
+def sum_view(request):
+    n1 = float(request.GET.get("n1"))
+    n2 = float(request.GET.get("n2"))
+
+    total = n1 + n2
+
+    return JsonResponse({"sum": total})
 
 
 
