@@ -47,9 +47,7 @@ def sum_view(request):
 
     total = n1 + n2
 
-    result = json.dumps({"sum": total})
-
-    return HttpResponse(f"<p>{result}</p>")
+    return HttpResponse(f"<p>{total}</p>")
 
 
 
