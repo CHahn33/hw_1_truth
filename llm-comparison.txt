@@ -1,0 +1,11 @@
+My original data model was simpler than the Chat-GPT model as mine focused 
+on establishing the six required tables and their relationships 
+through primary and foreign keys. The Chat-GPT model was more complete and had 
+additional fields such as email addresses, timestamps, QR code images, and 
+verification status. It also added constraints to prevent same enrollments and 
+QR identifiers from occuring, which could improve data integrity. 
+My original model was easier to implement and followed the 
+ER diagram, the Chat-GPT model furthered functionality that 
+could be useful for attendance tracking and preventing cheating. 
+Overall, I believe my original model is solid enough for the current assignment, 
+while the Chat version would be more useful as the application develops.

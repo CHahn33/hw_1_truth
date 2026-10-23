@@ -18,6 +18,7 @@ Entities
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 
 import logging
 import string
@@ -29,20 +30,26 @@ logger = logging.getLogger(__name__) # set up tracking, auditing, and debugging
 
 
 
-from django.db import models
 
 
 # ---------------------------------------------------------------------------
 # User profiles
 # ---------------------------------------------------------------------------
-
 class InstructorProfile(models.Model):
     """
-    Represents an instructor who can teach multiple courses.
-    Each instructor has a unique ID and a name.
+    Represents an instructor who teaches courses.
+    Each instructor is linked to a Django user account.
     """
 
     instructor_id = models.AutoField(primary_key=True)
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -51,17 +58,24 @@ class InstructorProfile(models.Model):
 
 class StudentProfile(models.Model):
     """
-    Represents a student who can enroll in multiple courses
-    and submit QR code uploads for attendance.
+    Represents a student who enrolls in courses
+    and submits QR codes for attendance.
+    Each student is linked to a user account.
     """
 
     student_id = models.AutoField(primary_key=True)
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-
-
 # ---------------------------------------------------------------------------
 # Course
 # ---------------------------------------------------------------------------
@@ -130,7 +144,7 @@ class Lecture(models.Model):
         on_delete=models.CASCADE
     )
     date = models.DateField()
-    qr_id = models.CharField(max_length=100,
+    qr_id = models.CharField(max_length=100, unique=True
     )
 
     def __str__(self):
@@ -140,19 +154,21 @@ class Lecture(models.Model):
 # ---------------------------------------------------------------------------
 # QR Code Upload
 # ---------------------------------------------------------------------------
-
 class QRCodeUpload(models.Model):
     """
-    Represents a QR code upload submitted by a student.
-    Each upload belongs to one student and can optionally
-    be associated with a lecture.
+    Represents a QR code photo uploaded by a student.
+    Each upload belongs to one student and may be
+    associated with a lecture. The image and upload
+    timestamp are stored to verify attendance.
     """
 
     upload_id = models.AutoField(primary_key=True)
+
     student = models.ForeignKey(
         StudentProfile,
         on_delete=models.CASCADE
     )
+
     lecture = models.ForeignKey(
         Lecture,
         on_delete=models.SET_NULL,
@@ -160,9 +176,16 @@ class QRCodeUpload(models.Model):
         blank=True
     )
 
+    image = models.FileField(upload_to="qr_uploads/",
+                             null=True,
+                             blank=True)
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
     def __str__(self):
         return f"QR Upload {self.upload_id} - {self.student}"
-
 # ---------------------------------------------------------------------------
 # Helper / API functions
 # ---------------------------------------------------------------------------
