@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 import json
 import io
 
-from .models import (InstructorProfile, StudentProfile, Course, Enrollment, Lecture, QRCodeUpload)
+from .models import InstructorProfile, StudentProfile, Course, Enrollment, Lecture, QRCodeUpload
 CDT = ZoneInfo("America/Chicago")
 
 
@@ -77,9 +77,9 @@ def createUser(request):
     )
 
     if is_student in ("1", "true"):
-        Student.objects.create(user=user, name=user_name)
+        StudentProfile.objects.create(user=user, name=user_name)
     else:
-        Instructor.objects.create(user=user, name=user_name)
+        InstructorProfile.objects.create(user=user, name=user_name)
 
     login(request, user)
 
