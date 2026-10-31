@@ -16,10 +16,7 @@ from zoneinfo import ZoneInfo
 import json
 import io
 
-# from .models import (InstructorProfile, StudentProfile, Course, Enrollment,
-#                      Lecture, QRCodeUpload, is_instructor, is_student,
-#                      getUploadsForCourse)
-
+from .models import (InstructorProfile, StudentProfile, Course, Enrollment, Lecture, QRCodeUpload)
 CDT = ZoneInfo("America/Chicago")
 
 
@@ -30,7 +27,10 @@ CDT = ZoneInfo("America/Chicago")
 def index(request):
     """Render the home page (index.html)."""
 
-    context = {}
+    context = {
+        "user": request.user,
+        "current_time": datetime.now(CDT).strftime("%H:%M")
+    }
     return render(request, 'app/index.html', context)
 
 def time_view(request):
@@ -54,8 +54,36 @@ def sum_view(request):
 # ---------------------------------------------------------------------------
 # HW4  — user creation
 # ---------------------------------------------------------------------------
+@csrf_exempt
+def createUser(request):
+    email = request.POST.get("email")
+    user_name = request.POST.get("user_name")
+    password = request.POST.get("password")
+    is_student = request.POST.get("is_student")
 
+    if not email or not user_name or not password or is_student not in ("1", "0", "true", "false"):
+        return HttpResponse("Invalid form data", status=400)
 
+    if User.objects.filter(email=email).exists():
+        return HttpResponse("Email already exists", status=400)
+
+    if User.objects.filter(username=user_name).exists():
+        return HttpResponse("Username already exists", status=400)
+
+    user = User.objects.create_user(
+        username=user_name,
+        email=email,
+        password=password
+    )
+
+    if is_student in ("1", "true"):
+        Student.objects.create(user=user, name=user_name)
+    else:
+        Instructor.objects.create(user=user, name=user_name)
+
+    login(request, user)
+
+    return HttpResponse("User created successfully", status=200)
 
 # ---------------------------------------------------------------------------
 # HW5  — courses, lectures, QR uploads, dump
