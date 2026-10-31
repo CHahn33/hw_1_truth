@@ -11,6 +11,7 @@ from django.http import (HttpResponse, HttpResponseForbidden,
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from django.views.decorators.http import require_GET, require_POST
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import json
@@ -54,7 +55,13 @@ def sum_view(request):
 # ---------------------------------------------------------------------------
 # HW4  — user creation
 # ---------------------------------------------------------------------------
+@require_GET
+
+def new(request):
+    return render(request, 'app/new.html')
+
 @csrf_exempt
+@require_POST
 def createUser(request):
     email = request.POST.get("email")
     user_name = request.POST.get("user_name")
