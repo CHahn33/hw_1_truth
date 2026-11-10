@@ -100,6 +100,7 @@ def createUser(request):
 def new_course(request):
     return render(request, 'app/new_course.html')
 
+@csrf_exempt
 def createCourse(request):
     if request.method != 'POST':
         return HttpResponse("POST Required", status=405)
