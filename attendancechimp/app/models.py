@@ -102,6 +102,11 @@ class Course(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+    def meets_on_day(self, weekday):
+        """weekday follows datetime.weekday(): Monday=0 ... Sunday=6."""
+        return [self.meets_mon, self.meets_tue, self.meets_wed,
+                self.meets_thu, self.meets_fri, False, False][weekday]
+
     def __str__(self):
         return self.course_number
 
@@ -215,23 +220,12 @@ def getUploadsForCourse(course):
     if course_obj is None:
         return []
 
-    # weekday(): Monday=0 ... Sunday=6; weekends are never meeting days
-    meets = [
-        course_obj.meets_mon,
-        course_obj.meets_tue,
-        course_obj.meets_wed,
-        course_obj.meets_thu,
-        course_obj.meets_fri,
-        False,
-        False,
-    ]
-
     uploads = QRCodeUpload.objects.filter(lecture__course=course_obj)
 
     valid = []
     for upload in uploads:
         local = timezone.localtime(upload.uploaded_at)
-        if not meets[local.weekday()]:
+        if not course_obj.meets_on_day(local.weekday()):
             continue
         if course_obj.start_time <= local.time() <= course_obj.end_time:
             valid.append(upload)

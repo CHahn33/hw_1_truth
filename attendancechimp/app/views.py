@@ -113,7 +113,7 @@ def createCourse(request):
 
     if instructor is None:
         return HttpResponse("Instructor Required", status=401)
-    course_number = request.POST.get("course-number")
+    course_number = request.POST.get("course-name")
     start_str = request.POST.get("start-time")
     end_str = request.POST.get("end-time")
 
@@ -126,9 +126,17 @@ def createCourse(request):
         return HttpResponse("Missing course data", status=400)
 
     # Times arrive as 24-hour "HH:MM" strings; convert to time objects
+    def parse_time(value):
+        for fmt in ("%H:%M", "%H:%M:%S"):
+            try:
+                return datetime.strptime(value.strip(), fmt).time()
+            except ValueError:
+                pass
+        raise ValueError(value)
+
     try:
-        start_time = datetime.strptime(start_str, "%H:%M").time()
-        end_time = datetime.strptime(end_str, "%H:%M").time()
+        start_time = parse_time(start_str)
+        end_time = parse_time(end_str)
     except ValueError:
         return HttpResponse("Invalid time format", status=400)
 
