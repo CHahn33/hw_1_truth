@@ -88,18 +88,22 @@ class Course(models.Model):
     """
 
     course_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=200)
+    course_number = models.CharField(max_length=200)
     instructor = models.ForeignKey(
         InstructorProfile,
         on_delete=models.CASCADE
     )
-    meeting_schd = models.CharField(
-        max_length=200,
-        help_text="Days and times when the course meets."
-    )
+    # One boolean per weekday
+    meets_mon = models.BooleanField(default=False)
+    meets_tue = models.BooleanField(default=False)
+    meets_wed = models.BooleanField(default=False)
+    meets_thu = models.BooleanField(default=False)
+    meets_fri = models.BooleanField(default=False)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
     def __str__(self):
-        return self.name
+        return self.course_number
 
 
 # ---------------------------------------------------------------------------
@@ -192,3 +196,43 @@ class QRCodeUpload(models.Model):
 
 
 
+
+
+def getUploadsForCourse(course):
+    """
+    Return the QRCodeUploads that are valid for the course with the given
+    course number (e.g. "DATA13600").
+
+    An upload is valid when, in local time (settings.TIME_ZONE):
+      a. it was made on a weekday the course meets, and
+      b. its time of day is between the course's start_time and end_time.
+
+    Returns an empty list if the course number does not exist.
+    """
+    from django.utils import timezone
+
+    course_obj = Course.objects.filter(course_number=course).first()
+    if course_obj is None:
+        return []
+
+    # weekday(): Monday=0 ... Sunday=6; weekends are never meeting days
+    meets = [
+        course_obj.meets_mon,
+        course_obj.meets_tue,
+        course_obj.meets_wed,
+        course_obj.meets_thu,
+        course_obj.meets_fri,
+        False,
+        False,
+    ]
+
+    uploads = QRCodeUpload.objects.filter(lecture__course=course_obj)
+
+    valid = []
+    for upload in uploads:
+        local = timezone.localtime(upload.uploaded_at)
+        if not meets[local.weekday()]:
+            continue
+        if course_obj.start_time <= local.time() <= course_obj.end_time:
+            valid.append(upload)
+    return valid

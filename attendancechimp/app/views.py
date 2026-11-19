@@ -18,7 +18,8 @@ from zoneinfo import ZoneInfo
 import json
 import io
 
-from .models import InstructorProfile, StudentProfile, Course, Enrollment, Lecture, QRCodeUpload
+from .models import InstructorProfile, StudentProfile, Course, Enrollment, Lecture, QRCodeUpload, getUploadsForCourse
+from django.utils import timezone
 CDT = ZoneInfo("America/Chicago")
 
 
@@ -112,25 +113,35 @@ def createCourse(request):
 
     if instructor is None:
         return HttpResponse("Instructor Required", status=401)
-    
-    name = request.POST.get("course-name")
-    start_time = request.POST.get("start-time")
-    end_time = request.POST.get("end-time")
+    course_number = request.POST.get("course-number")
+    start_str = request.POST.get("start-time")
+    end_str = request.POST.get("end-time")
 
-    days = []
-    for day in ['mon', 'tue', 'wed', 'thu', 'fri']:
-        if request.POST.get("day-" + day):
-            days.append(day)
+    days = {
+        day: bool(request.POST.get("day-" + day))
+        for day in ['mon', 'tue', 'wed', 'thu', 'fri']
+    }
 
-    if not name or not start_time or not end_time or not days:
+    if not course_number or not start_str or not end_str or not any(days.values()):
         return HttpResponse("Missing course data", status=400)
-    
-    schedule = ", ".join(days) + " " + start_time + "-" + end_time
+
+    # Times arrive as 24-hour "HH:MM" strings; convert to time objects
+    try:
+        start_time = datetime.strptime(start_str, "%H:%M").time()
+        end_time = datetime.strptime(end_str, "%H:%M").time()
+    except ValueError:
+        return HttpResponse("Invalid time format", status=400)
 
     Course.objects.create(
-        name=name,
+        course_number=course_number,
         instructor=instructor,
-        meeting_schd=schedule
+        meets_mon=days['mon'],
+        meets_tue=days['tue'],
+        meets_wed=days['wed'],
+        meets_thu=days['thu'],
+        meets_fri=days['fri'],
+        start_time=start_time,
+        end_time=end_time,
     )
 
     return HttpResponse("Course created successfully", status=200)
@@ -157,9 +168,9 @@ def createLecture(request):
     course_name = request.POST.get("choice")
 
     if not course_name:
-        return HttpResponse("Missing course name", status=400)
-    
-    course = Course.objects.filter(name=course_name, instructor=instructor).first()
+        return HttpResponse("Missing course number", status=400)
+
+    course = Course.objects.filter(course_number=course_name, instructor=instructor).first()
 
     if course is None:
         return HttpResponse("Course not found", status=400)
@@ -227,5 +238,30 @@ def dumpUploads(request):
 # HW6  — getUploads
 # ---------------------------------------------------------------------------
 
+def getUploads(request):
+    if request.method != 'GET':
+        return HttpResponse("GET Required", status=405)
+    
+    if not request.user.is_authenticated:
+        return HttpResponse("Instructor Required", status=401)
+    
+    instructor = InstructorProfile.objects.filter(user=request.user).first()
 
+    if instructor is None:
+        return HttpResponse("Instructor Required", status=401)
+    
+    course = request.GET.get("course")
 
+    if not course:
+        return JsonResponse({"error": "Missing course parameter"}, status=400)
+    
+    uploads = getUploadsForCourse(course)
+
+    data = []
+    for upload in uploads:
+        data.append({
+            "username": upload.student.user.username,
+            "upload_time": timezone.localtime(upload.uploaded_at).strftime("%Y-%m-%d %H:%M:%S")
+        })
+    
+    return JsonResponse(data, safe=False)

@@ -10,7 +10,7 @@
     
        <select name="choice">
             {% for course in courses %}
-                <option value="{{ course.name }}">{{ course.name }}</option>
+                <option value="{{ course.course_number }}">{{ course.course_number }}</option>
             {% endfor %}
        </select>
        
